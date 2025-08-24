@@ -6,9 +6,9 @@
     plan: free
     rootDir: ./backend
     buildCommand: >
-      apt-get update && 
-      apt-get install -y chromium && 
-      npm ci --production && 
+      apt-get update && \
+      apt-get install -y chromium wget ca-certificates libnss3 libatk-bridge2.0-0 libgtk-3-0 libasound2 fonts-liberation || true && \
+      npm ci --production --prefer-offline --no-audit --progress=false && \
       npm cache clean --force
     startCommand: node server.js
     autoDeploy: true
@@ -24,7 +24,7 @@
       - key: PUPPETEER_EXECUTABLE_PATH
         value: "/usr/bin/chromium"
       - key: FRONTEND_ORIGIN
-        value: "*"
+        sync: false
       - key: TVA_RATE
         value: "0.20"
       - key: DUPLICATE_WINDOW_SECONDS
@@ -96,10 +96,15 @@
       # Sensitive variables that need to be set in Render dashboard
       - key: VITE_API_KEY
         sync: false
-FRONTEND_ORIGIN=https://bedoui-firas-projects-e7e8a63d.vercel.app
-VITE_SUPABASE_URL=https://ppwwttumnhgoymzcwfcc.supabase.co
-VITE_SUPABASE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBwd3d0dHVtbmhnb3ltemN3ZmNjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxNjU3NTEsImV4cCI6MjA3MDc0MTc1MX0.1vhw1ZF95fEyBCiNU69bYxdGwn1PjNUXabjHWlGtYQM
-RECEIVER_EMAIL=firassmrabett111@gmail.com,marwenyoussef2017@gmail.com
-PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
-PORT=5000
-VITE_BACKEND_URL=http://localhost:5000
+      - key: VITE_SUPABASE_URL
+        sync: false
+      - key: VITE_SUPABASE_KEY
+        sync: false
+
+
+
+
+
+
+
+
