@@ -167,7 +167,6 @@ app.get('/', (req, res) => {
         ]
     });
 });
-}));
 app.use(express.json({ limit: '2mb' }));
 
 // Middleware to check API key for /send-quote
