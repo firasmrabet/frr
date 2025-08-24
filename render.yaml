@@ -1,0 +1,86 @@
+services:
+  # Backend API service
+  - type: web
+    name: bedoui-backend
+    runtime: node
+    plan: free
+    rootDir: ./backend
+    buildCommand: npm install
+    startCommand: node server.js
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "5000"
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        sync: false
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: API_KEY
+        sync: false
+      - key: ENCRYPTION_KEY
+        sync: false
+      - key: BACKUP_ENCRYPTION_KEY
+        sync: false
+      - key: DOWNLOAD_TOKEN_SECRET
+        sync: false
+      - key: DOWNLOAD_TOKEN_TTL
+        value: "3600"
+      - key: RECEIVER_EMAIL
+        sync: false
+      - key: FRONTEND_ORIGIN
+        value: "*"
+      - key: VITE_SUPABASE_URL
+        sync: false
+      - key: VITE_SUPABASE_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: COMPANY_SIRET
+        sync: false
+      - key: COMPANY_APE
+        sync: false
+      - key: COMPANY_TVA
+        sync: false
+      - key: COMPANY_PHONE
+        sync: false
+      - key: COMPANY_EMAIL
+        sync: false
+      - key: COMPANY_SITE
+        sync: false
+      - key: COMPANY_LOGO_URL
+        sync: false
+      - key: TVA_RATE
+        value: "0.20"
+      - key: DEVIS_NUMBER
+        sync: false
+      - key: PUPPETEER_SKIP_CHROMIUM_DOWNLOAD
+        value: "true"
+      - key: DUPLICATE_WINDOW_SECONDS
+        value: "15"
+
+  # Frontend service
+  - type: web
+    name: bedoui-frontend
+    runtime: node
+    plan: free
+    rootDir: ./frontend
+    buildCommand: npm install && npm run build
+    startCommand: npm run preview
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: VITE_API_KEY
+        sync: false
+      - key: VITE_SUPABASE_URL
+        sync: false
+      - key: VITE_SUPABASE_KEY
+        sync: false
+      - key: VITE_BACKEND_URL
+        value: "https://bedoui-backend.onrender.com"

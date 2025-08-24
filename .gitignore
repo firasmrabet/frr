@@ -1,0 +1,28 @@
+# Root gitignore
+
+# Node
+node_modules/
+**/node_modules/
+
+# Env
+.env
+**/.env
+.env.*.local
+
+# Build outputs
+frontend/dist/
+backend/generated-pdfs/
+
+# Old monorepo folder (exclude from repo)
+bd-main/
+
+# Logs
+logs/
+*.log
+
+# OS/Editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
