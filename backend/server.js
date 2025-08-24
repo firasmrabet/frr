@@ -142,12 +142,31 @@ app.use(cors({
     origin: function (origin, callback) {
         // allow requests with no origin (like mobile apps or curl)
         if (!origin) return callback(null, true);
-        if (allowedOrigins.has(origin)) return callback(null, true);
-        // in dev, allow localhost:5173 even if absent
+        // in production, allow all Render.com domains
+        if (process.env.NODE_ENV === 'production' && origin.includes('.onrender.com')) return callback(null, true);
+        // in dev, allow localhost
         if (process.env.NODE_ENV !== 'production' && origin.includes('localhost')) return callback(null, true);
+        // also check specific allowed origins
+        if (allowedOrigins.has(origin)) return callback(null, true);
+        console.log('CORS blocked origin:', origin);
         return callback(new Error('Not allowed by CORS'));
     },
     credentials: true
+}));
+
+// Root route - API info
+app.get('/', (req, res) => {
+    res.json({
+        name: 'Bedoui API',
+        version: '1.0.0',
+        status: 'running',
+        endpoints: [
+            '/health',
+            '/send-quote',
+            '/download-devis/:name'
+        ]
+    });
+});
 }));
 app.use(express.json({ limit: '2mb' }));
 
