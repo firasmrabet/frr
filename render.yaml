@@ -1,4 +1,4 @@
-﻿services:
+services:
   # Backend API service
   - type: web
     name: bedoui-backend
@@ -31,7 +31,7 @@
         value: "15"
       - key: DOWNLOAD_TOKEN_TTL
         value: "3600"
-      # Sensitive variables that need to be set in Render dashboard
+      # Sensitive variables
       - key: SMTP_HOST
         sync: false
       - key: SMTP_PORT
@@ -79,8 +79,7 @@
     runtime: node
     plan: free
     rootDir: ./frontend
-    buildCommand: >
-      npm ci --include=dev --prefer-offline --no-audit --progress=false && npm run build
+    buildCommand: npm install --include=dev && npm run build
     startCommand: npm run preview
     autoDeploy: true
     envVars:
@@ -94,18 +93,11 @@
         sync: false
       - key: VITE_OAUTH_REDIRECT_URL
         sync: false
-      # Sensitive variables that need to be set in Render dashboard
+      # Sensitive variables
       - key: VITE_API_KEY
         sync: false
       - key: VITE_SUPABASE_URL
         sync: false
       - key: VITE_SUPABASE_KEY
         sync: false
-
-
-
-
-
-
-
 
