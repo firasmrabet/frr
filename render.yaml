@@ -5,7 +5,11 @@ services:
     runtime: node
     plan: free
     rootDir: ./backend
-    buildCommand: npm ci --production && npm cache clean --force
+    buildCommand: >
+      apt-get update && 
+      apt-get install -y chromium && 
+      npm ci --production && 
+      npm cache clean --force
     startCommand: node server.js
     autoDeploy: true
     envVars:
@@ -15,6 +19,10 @@ services:
         value: "5000"
       - key: NODE_VERSION
         value: "20.x"
+      - key: PUPPETEER_SKIP_CHROMIUM_DOWNLOAD
+        value: "true"
+      - key: PUPPETEER_EXECUTABLE_PATH
+        value: "/usr/bin/chromium"
 
 
       - key: SMTP_HOST
