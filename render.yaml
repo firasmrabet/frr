@@ -24,7 +24,7 @@
       - key: PUPPETEER_EXECUTABLE_PATH
         value: "/usr/bin/chromium"
       - key: FRONTEND_ORIGIN
-        sync: false
+        value: "https://bedoui-frontend.onrender.com"
       - key: TVA_RATE
         value: "0.20"
       - key: DUPLICATE_WINDOW_SECONDS
@@ -90,7 +90,7 @@
       - key: PORT
         value: "10000"
       - key: VITE_BACKEND_URL
-        sync: false
+        value: "https://bedoui-backend.onrender.com"
       - key: VITE_OAUTH_REDIRECT_URL
         sync: false
       # Sensitive variables that need to be set in Render dashboard
@@ -100,3 +100,27 @@
         sync: false
       - key: VITE_SUPABASE_KEY
         sync: false
+
+
+
+
+
+
+
+
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=firassmrabett111@gmail.com
+SMTP_PASS=njzpoeqeclquosxy
+API_KEY=Zyd9/Z2bg51ek+cX8OQQ+WrZQT+TRGKAdqeUdMqlqhE=
+VITE_API_KEY=Zyd9/Z2bg51ek+cX8OQQ+WrZQT+TRGKAdqeUdMqlqhE=
+ENCRYPTION_KEY=9a4decac9b508bb7fdbc556a96a189bae07ab99111d9e70ecb45b697bf03a169
+BACKUP_ENCRYPTION_KEY=1da95a0060df569acca21708e1865b685d36dfb34e9683045072fd71b56ebed4
+NODE_ENV=development
+FRONTEND_ORIGIN=https://bedoui-firas-projects-e7e8a63d.vercel.app
+VITE_SUPABASE_URL=https://ppwwttumnhgoymzcwfcc.supabase.co
+VITE_SUPABASE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBwd3d0dHVtbmhnb3ltemN3ZmNjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxNjU3NTEsImV4cCI6MjA3MDc0MTc1MX0.1vhw1ZF95fEyBCiNU69bYxdGwn1PjNUXabjHWlGtYQM
+RECEIVER_EMAIL=firassmrabett111@gmail.com,marwenyoussef2017@gmail.com
+PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+PORT=5000
+VITE_BACKEND_URL=http://localhost:5000
