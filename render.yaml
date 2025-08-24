@@ -6,10 +6,7 @@ services:
     plan: free
     rootDir: ./backend
     buildCommand: >
-      apt-get update && \
-      apt-get install -y chromium wget ca-certificates libnss3 libatk-bridge2.0-0 libgtk-3-0 libasound2 fonts-liberation || true && \
-      npm install --production=false --prefer-offline --no-audit --progress=false && \
-      npm cache clean --force
+      npm ci --prefer-offline --no-audit --progress=false
     startCommand: node server.js
     autoDeploy: true
     envVars:
@@ -79,12 +76,8 @@ services:
     runtime: node
     plan: free
     rootDir: ./frontend
-<<<<<<< HEAD
     buildCommand: >
       npm ci --include=dev --prefer-offline --no-audit --progress=false && npx vite build
-=======
-    buildCommand: npm install --include=dev --prefer-offline --no-audit --progress=false && npm run build
->>>>>>> blueprint/master
     startCommand: npm run preview
     autoDeploy: true
     envVars:
