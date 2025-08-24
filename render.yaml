@@ -80,7 +80,7 @@
     plan: free
     rootDir: ./frontend
     buildCommand: >
-      npm ci --include=dev --prefer-offline --no-audit --progress=false && npm run build
+      npm ci --include=dev --prefer-offline --no-audit --progress=false && npx vite build
     startCommand: npm run preview
     autoDeploy: true
     envVars:
