@@ -79,7 +79,8 @@
     runtime: node
     plan: free
     rootDir: ./frontend
-  buildCommand: npm ci --include=dev --prefer-offline --no-audit --progress=false && npm run build
+    buildCommand: >
+      npm ci --include=dev --prefer-offline --no-audit --progress=false && npm run build
     startCommand: npm run preview
     autoDeploy: true
     envVars:
