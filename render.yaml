@@ -24,7 +24,7 @@
       - key: PUPPETEER_EXECUTABLE_PATH
         value: "/usr/bin/chromium"
       - key: FRONTEND_ORIGIN
-        value: "https://bedoui-frontend.onrender.com"
+        value: "*"
       - key: TVA_RATE
         value: "0.20"
       - key: DUPLICATE_WINDOW_SECONDS
@@ -90,7 +90,7 @@
       - key: PORT
         value: "10000"
       - key: VITE_BACKEND_URL
-        value: "https://bedoui-backend.onrender.com"
+        sync: false
       - key: VITE_OAUTH_REDIRECT_URL
         sync: false
       # Sensitive variables that need to be set in Render dashboard
