@@ -1,4 +1,4 @@
-﻿services:
+services:
   # Backend API service
   - type: web
     name: bedoui-backend
@@ -8,7 +8,7 @@
     buildCommand: >
       apt-get update && \
       apt-get install -y chromium wget ca-certificates libnss3 libatk-bridge2.0-0 libgtk-3-0 libasound2 fonts-liberation || true && \
-      npm ci --production --prefer-offline --no-audit --progress=false && \
+      npm install --production=false --prefer-offline --no-audit --progress=false && \
       npm cache clean --force
     startCommand: node server.js
     autoDeploy: true
@@ -31,7 +31,7 @@
         value: "15"
       - key: DOWNLOAD_TOKEN_TTL
         value: "3600"
-      # Sensitive variables that need to be set in Render dashboard
+      # Sensitive variables set via Render Dashboard
       - key: SMTP_HOST
         sync: false
       - key: SMTP_PORT
@@ -79,8 +79,12 @@
     runtime: node
     plan: free
     rootDir: ./frontend
+<<<<<<< HEAD
     buildCommand: >
       npm ci --include=dev --prefer-offline --no-audit --progress=false && npx vite build
+=======
+    buildCommand: npm install --include=dev --prefer-offline --no-audit --progress=false && npm run build
+>>>>>>> blueprint/master
     startCommand: npm run preview
     autoDeploy: true
     envVars:
@@ -94,18 +98,11 @@
         sync: false
       - key: VITE_OAUTH_REDIRECT_URL
         sync: false
-      # Sensitive variables that need to be set in Render dashboard
+      # Sensitive variables set via Render Dashboard
       - key: VITE_API_KEY
         sync: false
       - key: VITE_SUPABASE_URL
         sync: false
       - key: VITE_SUPABASE_KEY
         sync: false
-
-
-
-
-
-
-
 

@@ -1,4 +1,5 @@
 
+
 import express from 'express';
 import cors from 'cors';
 import nodemailer from 'nodemailer';
@@ -131,7 +132,9 @@ const allowedOrigins = new Set([
     'http://localhost:5179',
     'http://localhost:5180',
     'http://localhost:5173',
-    'http://localhost:8080'
+    'http://localhost:8080',
+    'https://bedoui-frontend.onrender.com',
+    'https://bedoui-backend.onrender.com'
 ]);
 if (configuredFrontendOrigin) allowedOrigins.add(configuredFrontendOrigin);
 console.log('CORS allowed origins ->', Array.from(allowedOrigins));
