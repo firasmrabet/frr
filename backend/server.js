@@ -135,6 +135,8 @@ const allowedOrigins = new Set([
     'https://bedoui-frontend.onrender.com',
     'https://bedoui-backend.onrender.com'
 ]);
+// Allow Vercel frontend domain used for the deployed frontend
+allowedOrigins.add('https://bedouistoreproducts.vercel.app');
 if (configuredFrontendOrigin) allowedOrigins.add(configuredFrontendOrigin);
 console.log('CORS allowed origins ->', Array.from(allowedOrigins));
 
@@ -143,12 +145,13 @@ app.use(cors({
         // allow requests with no origin (like mobile apps or curl)
         if (!origin) return callback(null, true);
 
-        const isRender = origin.includes('.onrender.com');
+    const isRender = origin.includes('.onrender.com');
+    const isVercel = origin.includes('.vercel.app');
         const isLocalhost = /^https?:\/\/localhost(?::\d+)?$/.test(origin);
         const isPrivateIp = /^https?:\/\/(?:127\.0\.0\.1|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3}|172\.(?:1[6-9]|2[0-9]|3[0-1])\.\d{1,3}\.\d{1,3})(?::\d+)?$/.test(origin);
 
-        // Always allow Render domains
-        if (isRender) return callback(null, true);
+    // Always allow Render and Vercel domains
+    if (isRender || isVercel) return callback(null, true);
         // In development, allow localhost and private network IPs
         if (process.env.NODE_ENV !== 'production' && (isLocalhost || isPrivateIp)) return callback(null, true);
         // Also allow explicitly configured/static origins
