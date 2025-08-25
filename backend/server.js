@@ -20,7 +20,8 @@ const puppeteerConfig = {
         '--disable-gpu',
         '--window-size=1920x1080'
     ],
-    headless: 'new'
+    headless: 'new',
+    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/google-chrome'
 };
 import path from 'path';
 import { promises as fs } from 'fs';
