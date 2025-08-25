@@ -142,12 +142,18 @@ app.use(cors({
     origin: function (origin, callback) {
         // allow requests with no origin (like mobile apps or curl)
         if (!origin) return callback(null, true);
-        // in production, allow all Render.com domains
-        if (process.env.NODE_ENV === 'production' && origin.includes('.onrender.com')) return callback(null, true);
-        // in dev, allow localhost
-        if (process.env.NODE_ENV !== 'production' && origin.includes('localhost')) return callback(null, true);
-        // also check specific allowed origins
+
+        const isRender = origin.includes('.onrender.com');
+        const isLocalhost = /^https?:\/\/localhost(?::\d+)?$/.test(origin);
+        const isPrivateIp = /^https?:\/\/(?:127\.0\.0\.1|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3}|172\.(?:1[6-9]|2[0-9]|3[0-1])\.\d{1,3}\.\d{1,3})(?::\d+)?$/.test(origin);
+
+        // Always allow Render domains
+        if (isRender) return callback(null, true);
+        // In development, allow localhost and private network IPs
+        if (process.env.NODE_ENV !== 'production' && (isLocalhost || isPrivateIp)) return callback(null, true);
+        // Also allow explicitly configured/static origins
         if (allowedOrigins.has(origin)) return callback(null, true);
+
         console.log('CORS blocked origin:', origin);
         return callback(new Error('Not allowed by CORS'));
     },

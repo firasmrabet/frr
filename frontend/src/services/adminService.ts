@@ -48,12 +48,17 @@ export const categoriesService = {
   // Get all custom categories
   async getAll(): Promise<CustomCategory[]> {
     try {
+      console.log('Fetching categories with Supabase URL:', import.meta.env.VITE_SUPABASE_URL);
       const { data, error } = await supabase
         .from('custom_categories')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error fetching categories:', error);
+        throw error;
+      }
+      console.log('Categories fetched successfully:', data);
       return data || [];
     } catch (error) {
       console.error('Error fetching categories:', error);

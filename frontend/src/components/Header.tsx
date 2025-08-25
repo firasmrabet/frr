@@ -144,30 +144,30 @@ function Header() {
       {/* Top bar */}
       <div className="bg-slate-800 text-white text-sm py-2">
         <div className="container mx-auto px-4 flex justify-between items-center">
-          <div className="flex items-center space-x-4">
+          <div className="hidden md:flex items-center space-x-4">
             <div className="flex items-center space-x-2">
               <FiPhone className="w-4 h-4" />
               <a href="tel:+21629493780" className="hover:underline">+216 29493780</a>
             </div>
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-2 max-w-[220px] min-w-0">
               <FiMail className="w-4 h-4" />
-              <a href="mailto:marwenyoussef2017@gmail.com" className="hover:underline">
-          support@bedouielectransormateur.com 
+              <a href="mailto:marwenyoussef2017@gmail.com" className="hover:underline truncate block min-w-0">
+                support@bedouielectransormateur.com
               </a>
             </div>
-              
           </div>
+          <div className="md:hidden w-full" />
         </div>
       </div>
 
       {/* Main header */}
       <header className="bg-white shadow-md sticky top-0 z-50">
         <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between py-4">
+          <div className="flex flex-wrap items-center justify-between py-4 gap-4 relative">
             {/* Logo */}
-            <div className="flex items-center">
+      <div className="flex items-center flex-shrink-0 pr-16 md:pr-0">
               <button
-                className="text-2xl font-bold text-blue-900 focus:outline-none"
+        className="text-xl sm:text-2xl font-bold text-blue-900 focus:outline-none"
                 style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
                 onClick={() => {
                   navigate('/');
@@ -175,13 +175,13 @@ function Header() {
                   setIsMenuOpen(false);
                 }}
               >
-                Bedouielec
-                <span className="block text-sm font-normal text-slate-600">Transformateurs</span>
+        Bedouielec
+        <span className="block text-sm font-normal text-slate-600 hidden sm:block">Transformateurs</span>
               </button>
             </div>
 
             {/* Search bar */}
-            <div className="flex-1 max-w-2xl mx-8 hidden md:block">
+            <div className="flex-1 max-w-2xl mx-8 hidden md:block min-w-0">
               <form onSubmit={handleSearch} className="relative">
                 <input
                   type="text"
@@ -220,10 +220,10 @@ function Header() {
               </form>
             </div>
 
-            {/* Right section */}
-            <div className="flex items-center space-x-4">
+      {/* Right section */}
+      <div className="flex items-center space-x-2 md:space-x-4 flex-shrink-0 min-w-0 absolute right-4 top-4 md:static z-50">
               <button
-                className="hidden md:flex items-center space-x-1 text-gray-700 hover:text-blue-600"
+                className="flex items-center space-x-1 text-gray-700 hover:text-blue-600"
                 onClick={() => {
                   if (!isAuthenticated) {
                     navigate('/login');
@@ -233,7 +233,7 @@ function Header() {
                 }}
               >
                 <FiUser className="w-5 h-5" />
-                <span className="hover:underline ml-1">Mon compte</span>
+        <span className="hover:underline ml-1 text-sm hidden md:inline">Mon compte</span>
               </button>
 
               {/* Admin button - only visible for admin */}
@@ -252,7 +252,7 @@ function Header() {
 
               {/* Debug info - remove this after testing */}
               {isAuthenticated && (
-                <div className="hidden md:block text-xs text-gray-500">
+                <div className="hidden md:block text-xs text-gray-500 max-w-[140px] truncate min-w-0">
                   Email: {state.userEmail}
                 </div>
               )}
@@ -286,7 +286,7 @@ function Header() {
           </div>
 
           {/* Mobile search */}
-          <div className="md:hidden pb-4">
+          <div className={`md:hidden pb-4 ${isMenuOpen ? 'hidden' : ''}`}>
             <form onSubmit={handleSearch} className="relative">
               <input
                 type="text"
@@ -308,8 +308,25 @@ function Header() {
         {/* Navigation */}
         <nav className="border-t border-gray-200">
           <div className="container mx-auto px-4">
-            <div className={`${isMenuOpen ? 'block' : 'hidden'} md:block`}>
-              <div className="flex flex-wrap items-center gap-x-6 gap-y-2 py-2">
+          <div className={`${isMenuOpen ? 'block' : 'hidden'} md:block`}>
+              <div className="flex flex-wrap items-center gap-x-6 gap-y-2 py-2 overflow-x-auto">
+                {/* Mobile action panel (shown when menu open) */}
+                {isMenuOpen && (
+                  <div className="md:hidden w-full bg-white p-4 rounded mb-2 shadow">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center space-x-3">
+                        <FiUser className="w-6 h-6 text-gray-700" />
+                        <button onClick={() => { setIsMenuOpen(false); navigate(isAuthenticated ? '/mon-compte' : '/login'); }} className="text-gray-800 font-medium">Mon compte</button>
+                      </div>
+                      {state.isAdmin && (
+                        <button onClick={() => { setIsMenuOpen(false); navigate('/admin'); }} className="text-orange-600 font-medium">Administrateur</button>
+                      )}
+                    </div>
+                    {isAuthenticated && (
+                      <div className="text-xs text-gray-500 truncate">Courriel : {state.userEmail}</div>
+                    )}
+                  </div>
+                )}
                 <button
                   onClick={() => {
                     navigate('/');

@@ -55,22 +55,57 @@ export default function SignIn() {
     }
   };
 
-  const handleGoogleLogin = async () => {
-    setError('');
-    setSuccess('');
-    setLoading(true);
-    const oauthRedirect = (import.meta as any).env?.VITE_OAUTH_REDIRECT_URL || window.location.origin;
+    const handleGoogleLogin = async () => {
     try {
-      await supabase.auth.signInWithOAuth({
+      setError('');
+      setSuccess('');
+      setLoading(true);
+
+      // Determine the correct redirect URL based on environment
+      let redirectUrl;
+      const currentOrigin = window.location.origin;
+      const hostname = window.location.hostname;
+
+      // Check if we're in production (Render deployment)
+      if (currentOrigin.includes('.onrender.com')) {
+        redirectUrl = currentOrigin;
+      }
+      // Check if we're on localhost or private network
+      else if (hostname === 'localhost' || hostname.startsWith('192.168.') || hostname.startsWith('10.') || hostname.startsWith('172.')) {
+        redirectUrl = currentOrigin;
+      }
+      // Fallback to current origin
+      else {
+        redirectUrl = currentOrigin;
+      }
+
+      console.log('OAuth redirect URL:', redirectUrl);
+
+      const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: oauthRedirect
+          redirectTo: `${redirectUrl}/`,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent'
+          }
         }
       });
-    } catch (err) {
-      setError('Erreur Google Login');
+
+      if (error) throw error;
+
+      // Listen for auth state change to handle redirection
+      supabase.auth.onAuthStateChange((event, session) => {
+        if (event === 'SIGNED_IN' && session) {
+          navigate('/');
+        }
+      });
+    } catch (error) {
+      setError('Erreur lors de la connexion Google');
+      console.error('Google login error:', error);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   // SUPPRIME l'inscription classique et le login email/mot de passe

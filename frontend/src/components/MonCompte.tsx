@@ -52,7 +52,7 @@ function MonCompte() {
             </div>
           </div>
           <button
-            className="flex items-center bg-red-100 text-red-600 px-3 py-1 rounded hover:bg-red-200 transition"
+            className="flex items-center bg-red-100 text-red-600 px-2 py-1 rounded hover:bg-red-200 transition max-w-[120px] overflow-hidden"
             onClick={async () => {
               try {
                 // Persist current cart to Supabase before signing out so the filled state is saved
@@ -86,7 +86,8 @@ function MonCompte() {
             }}
             title="Déconnexion"
           >
-            <FiLogOut className="w-5 h-5 mr-1" /> Déconnexion
+            <FiLogOut className="w-5 h-5 mr-1 flex-shrink-0" />
+            <span className="truncate text-sm">Déconnexion</span>
           </button>
         </div>
         <div className="mb-6">

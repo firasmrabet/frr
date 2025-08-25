@@ -20,6 +20,10 @@ export default defineConfig({
     port: 5173,
     host: true
   },
+  preview: {
+    // allow Render preview host when using `vite preview` or preview URLs
+    allowedHosts: ['bedoui-frontend.onrender.com']
+  },
   define: {
     'process.env': process.env
   },

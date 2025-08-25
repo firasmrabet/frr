@@ -26,8 +26,35 @@ function AppContent() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   React.useEffect(() => {
     async function checkAuth() {
+      // Vérifier si nous venons d'une redirection OAuth
+      const hash = window.location.hash;
+      if (hash.includes('access_token') || hash.includes('error')) {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          setIsAuthenticated(true);
+          // Redirection forcée vers la page d'accueil
+          window.location.replace('/');
+          return;
+        }
+      }
+
+      // Vérification normale de l'authentification
       const { data } = await supabase.auth.getUser();
       setIsAuthenticated(!!data?.user);
+      
+      // Écouter les changements d'auth
+      const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
+        console.log('Auth event:', event);
+        if (event === 'SIGNED_IN') {
+          setIsAuthenticated(true);
+          // Redirection forcée vers la page d'accueil
+          window.location.replace('/');
+        }
+      });
+
+      return () => {
+        authListener?.subscription?.unsubscribe();
+      };
       setAuthChecked(true);
     }
     checkAuth();
