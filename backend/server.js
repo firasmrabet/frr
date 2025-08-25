@@ -198,8 +198,17 @@ app.get('/health', (req, res) => res.json({ ok: true }));
 
 app.post('/send-quote', async (req, res) => {
   try {
+    console.log('🔍 Starting quote generation process');
+    console.log('📧 SMTP Configuration:', {
+      host: process.env.SMTP_HOST,
+      port: process.env.SMTP_PORT,
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS ? '(set)' : '(not set)'
+    });
+    
     // Get admin emails from environment variable and split into array
     const adminEmails = process.env.RECEIVER_EMAIL ? process.env.RECEIVER_EMAIL.split(',').map(email => email.trim()) : [];
+    console.log('👥 Admin emails:', adminEmails);
         console.log('ENTER /send-quote handler, body:', JSON.stringify(req.body).slice(0,1000));
         // Quick duplicate detection: sign the JSON body with the DOWNLOAD_TOKEN_SECRET
     const bodyString = stableStringify(req.body || {});
@@ -404,8 +413,9 @@ app.post('/send-quote', async (req, res) => {
     });
 
     // Use Puppeteer to convert rendered HTML to PDF for reliable results
-    console.log('process.cwd():', process.cwd());
-    console.log('templatePath:', templatePath);
+    console.log('📂 Current working directory:', process.cwd());
+    console.log('📄 Template path:', templatePath);
+    console.log('🤖 Puppeteer config:', JSON.stringify(puppeteerConfig, null, 2));
     let pdfBuffer;
     try {
         const browser = await puppeteer.launch(puppeteerConfig);
