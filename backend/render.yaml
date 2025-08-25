@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: bedoui-backend
+    env: node
+    buildCommand: |
+      apt-get update && \
+      apt-get install -y chromium chromium-l10n && \
+      npm ci --prefer-offline --no-audit --progress=false
+    startCommand: node server.js
+    envVars:
+      - key: PUPPETEER_EXECUTABLE_PATH
+        value: /usr/bin/chromium
