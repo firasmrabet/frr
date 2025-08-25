@@ -58,31 +58,44 @@ export default function QuoteModal() {
       message: formData.message || `Bonjour, je souhaite recevoir un devis pour les produits sélectionnés. Merci de me contacter avec vos meilleures conditions.`
     };
   // Send JSON to backend (no PDF)
-  fetch(sendQuoteUrl, {
+  try {
+    const resp = await fetch(sendQuoteUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'x-api-key': apiKey
       },
       body: JSON.stringify(quoteRequest)
-    })
-    .then(() => {
-      dispatch({ type: 'SUBMIT_QUOTE', payload: quoteRequest });
-      // If the quote covers the whole cart (no single selectedProduct), clear the cart after 2s
-      if (!state.selectedProduct) {
-        setTimeout(() => {
-          dispatch({ type: 'EXPLICIT_CLEAR_CART' });
-        }, 2000);
-      }
-      // Close modal immediately
-      dispatch({ type: 'CLOSE_QUOTE_MODAL' });
-      // Navigate to success page
-      navigate('/quote-success');
-    })
-    .catch(() => {
-      alert('Erreur lors de l\'envoi de la demande.');
-      setShowTemplate(false);
     });
+
+    // Log response for troubleshooting
+    console.debug('send-quote response status:', resp.status);
+
+    if (!resp.ok) {
+      // try to parse JSON error message
+      let errBody = null;
+      try { errBody = await resp.json(); } catch (e) { /* ignore */ }
+      const errMsg = (errBody && (errBody.error || errBody.message)) || resp.statusText || `HTTP ${resp.status}`;
+      throw new Error(errMsg);
+    }
+
+    // Success: update app state and navigate
+    dispatch({ type: 'SUBMIT_QUOTE', payload: quoteRequest });
+    // If the quote covers the whole cart (no single selectedProduct), clear the cart after 2s
+    if (!state.selectedProduct) {
+      setTimeout(() => {
+        dispatch({ type: 'EXPLICIT_CLEAR_CART' });
+      }, 2000);
+    }
+    // Close modal immediately
+    dispatch({ type: 'CLOSE_QUOTE_MODAL' });
+    // Navigate to success page
+    navigate('/quote-success');
+  } catch (err: any) {
+    console.error('Failed to send quote:', err);
+    alert(`Erreur lors de l'envoi de la demande: ${err && err.message ? err.message : 'erreur inconnue'}`);
+    setShowTemplate(false);
+  }
   };
 
   const totalPrice = products.reduce((sum: number, item: any) => sum + item.totalPrice, 0);
