@@ -8,7 +8,7 @@
   },
   "scripts": {
   "dev": "vite",
-  "build": "npx tsc --skipLibCheck && vite build",
+  "build": "npx -p typescript tsc --skipLibCheck && vite build",
     "lint": "eslint .",
     "preview": "vite preview --host 0.0.0.0 --port $PORT",
     "clean": "rimraf dist node_modules",
