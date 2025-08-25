@@ -1,0 +1,19 @@
+{
+  "name": "Test User",
+  "email": "test@example.com",
+  "phone": "12345678",
+  "company": "Test Company",
+  "message": "Ceci est un test d'envoi de devis",
+  "products": [
+    {
+      "product": {
+        "id": 1,
+        "name": "Produit Test",
+        "price": 100,
+        "description": "Description du produit test"
+      },
+      "quantity": 2,
+      "totalPrice": 200
+    }
+  ]
+}

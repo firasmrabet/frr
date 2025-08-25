@@ -21,10 +21,12 @@
     "express": "^4.18.2",
     "googleapis": "^129.0.0",
     "html-pdf": "^3.0.1",
-    "node-fetch": "^3.3.2",
     "nodemailer": "^7.0.5",
     "pdfkit": "^0.17.1",
     "puppeteer": "^21.11.0",
     "stream-buffers": "^3.0.3"
+  },
+  "devDependencies": {
+    "node-fetch": "^3.3.2"
   }
 }
