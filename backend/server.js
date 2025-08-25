@@ -21,7 +21,7 @@ const puppeteerConfig = {
         '--window-size=1920x1080'
     ],
     headless: 'new',
-    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/google-chrome-stable'
+    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/chromium'
 };
 import path from 'path';
 import { promises as fs } from 'fs';
