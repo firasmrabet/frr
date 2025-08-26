@@ -3,6 +3,8 @@ services:
     name: bedoui-backend
     env: node
     buildCommand: |
+      apt-get update && \
+      apt-get install -y chromium-browser && \
       npm ci --prefer-offline --no-audit --progress=false && \
       npx playwright install chromium --with-deps
     startCommand: node server.js
@@ -10,4 +12,34 @@ services:
       - key: PLAYWRIGHT_BROWSERS_PATH
         value: /ms-playwright
       - key: PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH
-        value: /usr/bin/chromium
+        value: /usr/bin/chromium-browser
+      - key: CHROME_BIN
+        value: /usr/bin/chromium-browser
+      - key: PUPPETEER_SKIP_CHROMIUM_DOWNLOAD
+        value: "true"
+      - key: PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD
+        value: "1"
+      - key: PDF_STORAGE_PATH
+        value: ./generated-pdfs
+      - key: PDF_TEMPLATE_PATH
+        value: ./templates/devis-pdf.ejs
+      
+      # Company Information
+      - key: COMPANY_NAME
+        value: "Bedouielec"
+      - key: COMPANY_SIRET
+        value: "12345678900001"
+      - key: COMPANY_APE
+        value: "4321A"
+      - key: COMPANY_TVA
+        value: "0.20"
+      - key: COMPANY_ADDRESS
+        value: "Rue Example, 1234 Ville"
+      - key: COMPANY_PHONE
+        value: "+216 12 345 678"
+      - key: COMPANY_EMAIL
+        value: "firassmrabett111@gmail.com"
+      - key: COMPANY_SITE
+        value: "https://bedouistoreproducts.vercel.app"
+      - key: COMPANY_LOGO_URL
+        value: "https://bedouistoreproducts.vercel.app/logo.png"
