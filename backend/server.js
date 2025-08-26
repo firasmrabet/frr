@@ -8,6 +8,7 @@ import { promisify } from 'util';
 import { exec } from 'child_process';
 import { promises as fs } from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
 import crypto from 'crypto';
 
 dotenv.config();
@@ -263,15 +264,22 @@ app.use('/send-quote', (req, res, next) => {
 app.post('/send-quote', async (req, res) => {
     try {
         console.log('🔍 Début du processus de génération de devis');
+
+        // Normaliser / trim des variables d'environnement SMTP pour éviter les \n/espaces
+        const SMTP_HOST = (process.env.SMTP_HOST || '').toString().trim();
+        const SMTP_PORT = (process.env.SMTP_PORT || '').toString().trim();
+        const SMTP_USER = (process.env.SMTP_USER || '').toString().trim();
+        const SMTP_PASS = (process.env.SMTP_PASS || '').toString().trim();
+        const RECEIVER_EMAIL = (process.env.RECEIVER_EMAIL || '').toString().trim();
+
         console.log('📧 Configuration SMTP:', {
-            host: process.env.SMTP_HOST,
-            port: process.env.SMTP_PORT,
-            user: process.env.SMTP_USER,
-            pass: process.env.SMTP_PASS ? '(configuré)' : '(non configuré)'
+            host: SMTP_HOST || '(non configuré)',
+            port: SMTP_PORT || '(non configuré)',
+            user: SMTP_USER ? 'CONFIGURÉ' : '(non configuré)',
+            pass: SMTP_PASS ? 'CONFIGURÉ' : '(non configuré)'
         });
-        
+
         // Vérification de la configuration SMTP
-        const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, RECEIVER_EMAIL } = process.env;
         
         if (!SMTP_HOST || !SMTP_USER || !SMTP_PASS) {
             console.error('❌ Configuration SMTP manquante');
@@ -339,8 +347,8 @@ app.post('/send-quote', async (req, res) => {
             return sum + (isNaN(itemTotal) ? 0 : itemTotal);
         }, 0);
 
-        // Configuration Nodemailer
-        const transporter = nodemailer.createTransporter({
+        // Configuration Nodemailer (utiliser createTransport)
+        const transporter = nodemailer.createTransport({
             host: SMTP_HOST,
             port: Number(SMTP_PORT) || 587,
             secure: String(SMTP_PORT) === '465',
@@ -498,40 +506,124 @@ app.post('/send-quote', async (req, res) => {
 
         // Génération du PDF
         console.log('🎭 Démarrage de la génération PDF');
-        const templatePath = path.join(process.cwd(), process.env.PDF_TEMPLATE_PATH || 'templates/devis-pdf.ejs');
-        
-        // Vérification de l'existence du template
-        try {
-            await fs.access(templatePath);
-            console.log('✅ Template PDF trouvé:', templatePath);
-        } catch (e) {
-            console.error('❌ Template PDF introuvable:', templatePath);
-            return res.status(500).json({
-                success: false,
-                error: 'Template PDF introuvable',
-                path: templatePath
-            });
+
+        // Résolution robuste du chemin du template PDF : supporte chemins absolus, relatifs et emplacements courants sur Render
+        const __filename = fileURLToPath(import.meta.url);
+        const __dirname = path.dirname(__filename);
+        const pdfTemplateEnv = (process.env.PDF_TEMPLATE_PATH || '').toString().trim();
+
+        const candidatePaths = [];
+        if (pdfTemplateEnv) {
+            // si chemin absolu donné
+            if (path.isAbsolute(pdfTemplateEnv)) {
+                candidatePaths.push(pdfTemplateEnv);
+            } else {
+                // chemins relatifs base process.cwd(), base __dirname, et chemins probables
+                candidatePaths.push(path.join(process.cwd(), pdfTemplateEnv));
+                candidatePaths.push(path.join(__dirname, pdfTemplateEnv));
+                candidatePaths.push(path.join(process.cwd(), 'app', pdfTemplateEnv));
+                candidatePaths.push(path.join(process.cwd(), 'backend', pdfTemplateEnv));
+            }
         }
 
-        const pdfHtml = await ejs.renderFile(templatePath, {
-            name,
-            email,
-            phone,
-            company,
-            message,
-            products,
-            totalPrice,
-            companySiret: process.env.COMPANY_SIRET,
-            companyApe: process.env.COMPANY_APE,
-            companyTva: process.env.COMPANY_TVA,
-            companyPhone: process.env.COMPANY_PHONE,
-            companyEmail: process.env.COMPANY_EMAIL,
-            companySite: process.env.COMPANY_SITE,
-            tvaRate: process.env.TVA_RATE ? Number(process.env.TVA_RATE) : 0.20,
-            devisNumber: process.env.DEVIS_NUMBER || undefined,
-            companyName: process.env.COMPANY_NAME || 'Bedouielec Transformateurs',
-            companyAddress: process.env.COMPANY_ADDRESS || ''
-        });
+        // chemins alternatifs courants
+        candidatePaths.push(path.join(process.cwd(), 'templates', 'devis-pdf.ejs'));
+        candidatePaths.push(path.join(process.cwd(), 'backend', 'templates', 'devis-pdf.ejs'));
+        candidatePaths.push(path.join(process.cwd(), 'app', 'templates', 'devis-pdf.ejs'));
+        candidatePaths.push(path.join(__dirname, 'templates', 'devis-pdf.ejs'));
+        candidatePaths.push(path.join(__dirname, '..', 'templates', 'devis-pdf.ejs'));
+
+        console.log('🔎 Vérification templates candidats:', candidatePaths);
+
+        let foundTemplate = null;
+        for (const p of candidatePaths) {
+            try {
+                if (!p) continue;
+                await fs.access(p);
+                foundTemplate = p;
+                break;
+            } catch (e) {
+                // ignore, essayer le suivant
+            }
+        }
+
+        // Vérification de l'existence du template. Si absent, utiliser un template de secours en ligne
+        let pdfHtml;
+        try {
+            if (foundTemplate) {
+                console.log('✅ Template PDF trouvé:', foundTemplate);
+                pdfHtml = await ejs.renderFile(foundTemplate, {
+                    name,
+                    email,
+                    phone,
+                    company,
+                    message,
+                    products,
+                    totalPrice,
+                    companySiret: process.env.COMPANY_SIRET,
+                    companyApe: process.env.COMPANY_APE,
+                    companyTva: process.env.COMPANY_TVA,
+                    companyPhone: process.env.COMPANY_PHONE,
+                    companyEmail: process.env.COMPANY_EMAIL,
+                    companySite: process.env.COMPANY_SITE,
+                    tvaRate: process.env.TVA_RATE ? Number(process.env.TVA_RATE) : 0.20,
+                    devisNumber: process.env.DEVIS_NUMBER || undefined,
+                    companyName: process.env.COMPANY_NAME || 'Bedouielec Transformateurs',
+                    companyAddress: process.env.COMPANY_ADDRESS || ''
+                });
+            } else {
+                throw new Error('Template non trouvé');
+            }
+        } catch (e) {
+            console.warn('⚠️ Template PDF introuvable ou erreur de lecture, utilisation d\'un template de secours. Candidates vérifiées:', candidatePaths, e && e.message);
+            // Template de secours minimal
+            const fallbackTemplate = `<!doctype html>
+                        <html>
+                        <head>
+                            <meta charset="utf-8" />
+                            <title>Devis</title>
+                            <style>
+                                body{font-family: Arial, sans-serif;padding:20px;color:#333}
+                                h1{color:#2b6cb0}
+                                .products{width:100%;border-collapse:collapse}
+                                .products th,.products td{border:1px solid #ddd;padding:8px}
+                                .total{font-weight:bold;text-align:right;margin-top:12px}
+                            </style>
+                        </head>
+                        <body>
+                            <h1>Devis - <%= companyName %></h1>
+                            <p><strong>Client:</strong> <%= name %> - <%= email %> - <%= phone %></p>
+                            <% if (company) { %><p><strong>Société:</strong> <%= company %></p><% } %>
+                            <table class="products">
+                                <thead><tr><th>Produit</th><th>Quantité</th><th>Prix</th><th>Total</th></tr></thead>
+                                <tbody>
+                                    <% products.forEach(function(item){ %>
+                                        <tr>
+                                            <td><%= item.product && item.product.name ? item.product.name : 'Produit' %></td>
+                                            <td><%= item.quantity || 1 %></td>
+                                            <td><%= (item.product && item.product.price) ? item.product.price.toLocaleString() : (item.totalPrice||0).toLocaleString() %> TND</td>
+                                            <td><%= (item.totalPrice||0).toLocaleString() %> TND</td>
+                                        </tr>
+                                    <% }) %>
+                                </tbody>
+                            </table>
+                            <p class="total">Total estimé: <%= totalPrice.toLocaleString() %> TND</p>
+                            <% if (message) { %><h3>Message:</h3><p><%= message.replace(/\n/g,'<br>') %></p><% } %>
+                            <footer style="margin-top:20px;font-size:12px;color:#666">Document généré automatiquement</footer>
+                        </body>
+                        </html>`;
+
+            pdfHtml = ejs.render(fallbackTemplate, {
+                name,
+                email,
+                phone,
+                company,
+                message,
+                products,
+                totalPrice,
+                companyName: process.env.COMPANY_NAME || 'Bedouielec Transformateurs'
+            });
+        }
 
         // Génération PDF avec Playwright
         let pdfBuffer;
