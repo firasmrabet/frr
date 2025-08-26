@@ -1,31 +1,28 @@
 
-
+import { chromium } from 'playwright';
 import express from 'express';
 import cors from 'cors';
 import nodemailer from 'nodemailer';
 import dotenv from 'dotenv';
 import ejs from 'ejs';
-import puppeteer from 'puppeteer';
 import { promisify } from 'util';
 import { exec } from 'child_process';
+import { promises as fs } from 'fs';
+import path from 'path';
+import crypto from 'crypto';
 
-// Configure Puppeteer for Render.com environment
+// Configure Playwright for Render.com environment
 const isProd = process.env.NODE_ENV === 'production';
-const puppeteerConfig = {
+const playwrightConfig = {
     args: [
         '--no-sandbox',
         '--disable-setuid-sandbox',
         '--disable-dev-shm-usage',
         '--disable-accelerated-2d-canvas',
-        '--disable-gpu',
-        '--window-size=1920x1080'
+        '--disable-gpu'
     ],
-    headless: 'new',
-    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/chromium-browser'
+    headless: true
 };
-import path from 'path';
-import { promises as fs } from 'fs';
-import crypto from 'crypto';
 
 dotenv.config();
 
@@ -123,18 +120,16 @@ const app = express();
 // Normalize FRONTEND_ORIGIN (trim) and build allowed origins list
 const configuredFrontendOrigin = (process.env.FRONTEND_ORIGIN || '').toString().trim() || undefined;
 const allowedOrigins = new Set([
-    'http://localhost:5173',
+    'http://localhost:5173',  // Vite dev server default
     'http://localhost:5174',
-    'http://localhost:5175',
-    'http://localhost:5176',
-    'http://localhost:5177',
-    'http://localhost:5178',
-    'http://localhost:5179',
-    'http://localhost:5180',
-    'http://localhost:5173',
-    'http://localhost:8080',
+    'http://localhost:4173',  // Vite preview
+    'http://localhost:4174',  // Vite preview alternative port
+    'http://127.0.0.1:5173', // Vite dev server on IPv4
+    'http://127.0.0.1:4173', // Vite preview on IPv4
     'https://bedoui-frontend.onrender.com',
-    'https://bedoui-backend.onrender.com'
+    'https://bedoui-backend.onrender.com',
+    'https://backend-bedoui.onrender.com',
+    'https://bedouistoreproducts.vercel.app'
 ]);
 // Allow Vercel frontend domain used for the deployed frontend
 allowedOrigins.add('https://bedouistoreproducts.vercel.app');
@@ -180,11 +175,16 @@ app.get('/', (req, res) => {
 app.use(express.json({ limit: '2mb' }));
 
 // Middleware to check API key for /send-quote
-const apiKey = process.env.API_KEY;
+const apiKey = process.env.API_KEY || process.env.VITE_API_KEY;  // Support both naming conventions
 app.use('/send-quote', (req, res, next) => {
     const clientKey = req.headers['x-api-key'];
     if (!apiKey || clientKey !== apiKey) {
-        return res.status(401).json({ success: false, error: 'Unauthorized: Invalid or missing API key.' });
+        console.warn('Invalid API key received:', clientKey);
+        return res.status(401).json({ 
+            success: false, 
+            error: 'Unauthorized: Invalid or missing API key.',
+            message: 'Veuillez vérifier la configuration de votre clé API.'
+        });
     }
     next();
 });
@@ -392,7 +392,7 @@ app.post('/send-quote', async (req, res) => {
     `;
 
     // Render PDF from EJS template and attach it
-    const templatePath = path.join(process.cwd(), 'templates', 'devis-pdf.ejs');
+    const templatePath = path.join(process.cwd(), process.env.PDF_TEMPLATE_PATH || 'templates/devis-pdf.ejs');
     const pdfHtml = await ejs.renderFile(templatePath, {
         name,
         email,
@@ -413,26 +413,57 @@ app.post('/send-quote', async (req, res) => {
         devisNumber: process.env.DEVIS_NUMBER || undefined
     });
 
-    // Use Puppeteer to convert rendered HTML to PDF for reliable results
+    // Use Playwright to convert rendered HTML to PDF for reliable results
     console.log('📂 Current working directory:', process.cwd());
     console.log('📄 Template path:', templatePath);
-    console.log('🤖 Puppeteer config:', JSON.stringify(puppeteerConfig, null, 2));
+    console.log('🎭 Playwright config:', JSON.stringify(playwrightConfig, null, 2));
     let pdfBuffer;
     try {
-        const browser = await puppeteer.launch(puppeteerConfig);
-        const page = await browser.newPage();
-        await page.setContent(pdfHtml, { waitUntil: 'networkidle0' });
-        pdfBuffer = await page.pdf({ format: 'A4', margin: { top: '10mm', bottom: '10mm', left: '10mm', right: '10mm' } });
+        console.log('Launching browser...');
+        const browser = await chromium.launch(playwrightConfig);
+        console.log('Browser launched successfully');
+        
+        console.log('Creating new context...');
+        const context = await browser.newContext();
+        console.log('Context created successfully');
+        
+        console.log('Creating new page...');
+        const page = await context.newPage();
+        console.log('Page created successfully');
+        
+        console.log('Setting page content...');
+        await page.setContent(pdfHtml);
+        console.log('Content set successfully');
+        
+        console.log('Generating PDF...');
+        pdfBuffer = await page.pdf({ 
+            format: 'A4',
+            margin: { top: '10mm', bottom: '10mm', left: '10mm', right: '10mm' },
+            printBackground: true
+        });
+        console.log('PDF generated successfully, size:', pdfBuffer.length, 'bytes');
+        
+        await context.close();
         await browser.close();
+        console.log('Browser closed successfully');
     } catch (e) {
-        console.error('Error generating PDF with Puppeteer:', e);
-        throw e;
+        console.error('Error generating PDF with Playwright:', e);
+        console.error('Stack trace:', e.stack);
+        console.error('Current directory:', process.cwd());
+        console.error('PDF Template Path:', process.env.PDF_TEMPLATE_PATH);
+        console.error('PDF Storage Path:', process.env.PDF_STORAGE_PATH);
+        console.error('Playwright executable path:', (await chromium.executablePath()));
+        return res.status(500).json({ 
+            success: false, 
+            error: 'Error generating PDF',
+            details: e.message
+        });
     }
 
     console.log('PDF buffer length:', pdfBuffer ? pdfBuffer.length : 'null');
 
     // ensure folder exists and save the PDF so we can provide a download link
-    const pdfDir = path.join(process.cwd(), 'generated-pdfs');
+    const pdfDir = path.join(process.cwd(), process.env.PDF_STORAGE_PATH || 'generated-pdfs');
     console.log('pdfDir will be:', pdfDir);
     await fs.mkdir(pdfDir, { recursive: true });
     const fileName = `devis-${Date.now()}.pdf`;
@@ -674,7 +705,7 @@ app.get('/admin/cart/:userId', async (req, res) => {
     }
 });
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
 // Route to download generated PDFs
 app.get('/download-devis/:name', async (req, res) => {
     try {
@@ -734,4 +765,9 @@ app.get('/health', async (req, res) => {
     }
 });
 
-app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`🚀 Server running on port ${PORT}`);
+    console.log(`📡 Server accessible at:`);
+    console.log(`   - http://localhost:${PORT}`);
+    console.log(`   - http://192.168.100.6:${PORT}`);
+});

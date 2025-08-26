@@ -3,10 +3,11 @@ services:
     name: bedoui-backend
     env: node
     buildCommand: |
-      apt-get update && \
-      apt-get install -y chromium chromium-l10n && \
-      npm ci --prefer-offline --no-audit --progress=false
+      npm ci --prefer-offline --no-audit --progress=false && \
+      npx playwright install chromium --with-deps
     startCommand: node server.js
     envVars:
-      - key: PUPPETEER_EXECUTABLE_PATH
+      - key: PLAYWRIGHT_BROWSERS_PATH
+        value: /ms-playwright
+      - key: PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH
         value: /usr/bin/chromium

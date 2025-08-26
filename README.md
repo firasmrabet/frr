@@ -116,7 +116,7 @@ npm run dev
 
 ### Backend
 - Express.js
-- Puppeteer (PDF generation)
+- Playwright (PDF generation)
 - Nodemailer (Email sending)
 - EJS (Template engine)
 - Supabase (Database)
