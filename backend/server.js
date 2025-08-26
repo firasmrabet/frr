@@ -33,27 +33,41 @@ async function findChromiumExecutable() {
     candidates.push('/usr/bin/chromium-browser');
     candidates.push('/usr/bin/google-chrome');
     candidates.push('/usr/bin/google-chrome-stable');
-
-    for (const c of candidates) {
-        if (!c) continue;
-        try {
-            // check if file exists and is executable
-            await fs.access(c);
-            return c;
-        } catch (e) {
-            // not present, continue
+    
+        console.log('Chromium detection candidates ->', candidates.filter(Boolean));
+    
+        for (const c of candidates) {
+            if (!c) continue;
+            try {
+                // prefer testing by running '<candidate> --version' which is more reliable than fs.access
+                const ok = await execExists(c);
+                if (ok) {
+                    console.log('Chromium candidate ok ->', c);
+                    // ensure env vars reflect the detected path so Playwright will pick it up
+                    process.env.CHROME_BIN = c;
+                    process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH = c;
+                    return c;
+                }
+            } catch (e) {
+                // continue to next candidate
+            }
         }
-    }
-
-    // As a last resort, try Playwright's executablePath()
-    try {
-        const pwPath = await chromium.executablePath();
-        if (pwPath) return pwPath;
-    } catch (e) {
-        // ignore
-    }
-
-    return undefined;
+    
+        // As a last resort, try Playwright's executablePath()
+        try {
+            const pwPath = await chromium.executablePath();
+            if (pwPath) {
+                console.log('Using Playwright reported executablePath ->', pwPath);
+                process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH = pwPath;
+                process.env.CHROME_BIN = pwPath;
+                return pwPath;
+            }
+        } catch (e) {
+            // ignore
+        }
+    
+        console.warn('No chromium executable detected from candidates or Playwright bundle');
+        return undefined;
 }
 let playwrightConfig = {
     args: [
