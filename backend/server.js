@@ -901,7 +901,7 @@ app.get('/health', async (req, res) => {
 // Remove this in production once debugging is complete.
 app.get('/debug/playwright', async (req, res) => {
     try {
-
+    console.log('DEBUG endpoint /debug/playwright invoked');
         const candidates = [
             process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH,
             process.env.CHROME_BIN,
