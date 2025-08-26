@@ -244,6 +244,20 @@ app.post('/send-quote', async (req, res) => {
         recentRequests.set(bodySig, now);
     const { name, email, phone, company, message, products } = req.body;
 
+    // Compute totalPrice defensively in case client didn't include it
+    const totalPrice = Array.isArray(products) ? products.reduce((sum, item) => {
+        // item may contain totalPrice already, otherwise compute from quantity * product.price
+        let itemTotal = 0;
+        if (item && typeof item.totalPrice === 'number') {
+            itemTotal = item.totalPrice;
+        } else if (item && item.product) {
+            const qty = Number(item.quantity) || 0;
+            const price = Number(item.product.price) || 0;
+            itemTotal = qty * price;
+        }
+        return sum + (isNaN(itemTotal) ? 0 : itemTotal);
+    }, 0) : 0;
+
     if (!name || !email || !phone || !products || !Array.isArray(products) || products.length === 0) {
       return res.status(400).json({ success: false, error: 'Missing required fields or products.' });
     }
@@ -412,7 +426,7 @@ app.post('/send-quote', async (req, res) => {
     companyPhone: process.env.COMPANY_PHONE,
     companyEmail: process.env.COMPANY_EMAIL,
     companySite: process.env.COMPANY_SITE,
-    logoUrl: process.env.COMPANY_LOGO_URL,
+    
     tvaRate: process.env.TVA_RATE ? Number(process.env.TVA_RATE) : 0.20,
     devisNumber: process.env.DEVIS_NUMBER || undefined,
     companyName: process.env.COMPANY_NAME || 'Bedouielec Transformateurs',
