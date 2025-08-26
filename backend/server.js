@@ -416,15 +416,17 @@ app.post('/send-quote', async (req, res) => {
         products,
         totalPrice,
         // optional company details from env
-        companySiret: process.env.COMPANY_SIRET,
-        companyApe: process.env.COMPANY_APE,
-        companyTva: process.env.COMPANY_TVA,
-        companyPhone: process.env.COMPANY_PHONE,
-        companyEmail: process.env.COMPANY_EMAIL,
-        companySite: process.env.COMPANY_SITE,
-        logoUrl: process.env.COMPANY_LOGO_URL,
-        tvaRate: process.env.TVA_RATE ? Number(process.env.TVA_RATE) : 0.20,
-        devisNumber: process.env.DEVIS_NUMBER || undefined
+    companySiret: process.env.COMPANY_SIRET,
+    companyApe: process.env.COMPANY_APE,
+    companyTva: process.env.COMPANY_TVA,
+    companyPhone: process.env.COMPANY_PHONE,
+    companyEmail: process.env.COMPANY_EMAIL,
+    companySite: process.env.COMPANY_SITE,
+    logoUrl: process.env.COMPANY_LOGO_URL,
+    tvaRate: process.env.TVA_RATE ? Number(process.env.TVA_RATE) : 0.20,
+    devisNumber: process.env.DEVIS_NUMBER || undefined,
+    companyName: process.env.COMPANY_NAME || 'Bedouielec Transformateurs',
+    companyAddress: process.env.COMPANY_ADDRESS || ''
     });
 
     // Use Playwright to convert rendered HTML to PDF for reliable results
