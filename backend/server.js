@@ -256,21 +256,11 @@ app.post('/send-quote', async (req, res) => {
     console.log('SMTP config:', SMTP_HOST, SMTP_PORT, SMTP_USER);
     const transporter = nodemailer.createTransport({
         host: SMTP_HOST,
-        port: Number(SMTP_PORT),
-        secure: false,
-        auth: {
-            user: SMTP_USER,
-            pass: SMTP_PASS
-        },
-        // enable logging/debug for investigation (remove in production)
-        logger: true,
-        debug: true
+        port: Number(SMTP_PORT) || 587,
+        secure: String(SMTP_PORT) === '465',
+        auth: SMTP_USER && SMTP_PASS ? { user: SMTP_USER, pass: SMTP_PASS } : undefined,
+        tls: { rejectUnauthorized: false }
     });
-
-    // Calculate total price for email subject
-    const totalPrice = products.reduce((sum, item) => sum + item.totalPrice, 0);
-
-    // Create a professional HTML email template with a PDF button placeholder
     const emailTemplate = `
     <!DOCTYPE html>
     <html lang="fr">
@@ -769,12 +759,7 @@ app.get('/health', async (req, res) => {
             const { stdout } = await execAsync('chromium --version');
             chromeVersion = stdout.trim();
         } catch (e) {
-            try {
-                const { stdout } = await execAsync('chromium-browser --version');
-                chromeVersion = stdout.trim();
-            } catch (e2) {
-                chromeVersion = null;
-            }
+            chromeVersion = null;
         }
 
         // Check if PDF directory exists and is writable
