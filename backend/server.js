@@ -21,8 +21,18 @@ const playwrightConfig = {
         '--disable-accelerated-2d-canvas',
         '--disable-gpu'
     ],
-    headless: true
+    headless: true,
+    executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH || undefined,
+    chromiumSandbox: false
 };
+
+// Set environment variables for Playwright
+if (process.env.PLAYWRIGHT_BROWSERS_PATH) {
+    process.env.PLAYWRIGHT_BROWSERS_PATH = process.env.PLAYWRIGHT_BROWSERS_PATH;
+}
+if (process.env.CHROME_BIN) {
+    process.env.CHROME_EXECUTABLE_PATH = process.env.CHROME_BIN;
+}
 
 dotenv.config();
 
