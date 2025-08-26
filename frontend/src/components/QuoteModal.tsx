@@ -1,10 +1,6 @@
 import { useState } from 'react';
-
-
 import type { QuoteRequest } from '../types/index';
-
-
-import { X, Send } from 'lucide-react';
+import { X, Send, AlertCircle } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 import { useNavigate } from 'react-router-dom';
 
@@ -25,6 +21,8 @@ export default function QuoteModal() {
     message: ''
   });
   const [showTemplate, setShowTemplate] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   if (!state.isQuoteModalOpen) return null;
 
@@ -32,70 +30,135 @@ export default function QuoteModal() {
     ? [{ product: state.selectedProduct, quantity: 1, selectedVariations: {}, totalPrice: state.selectedProduct.price }]
     : state.cart;
 
-  // Read API key from Vite env to avoid hard-coding secrets in source
+  // Lire la clé API depuis les variables d'environnement Vite
   const apiKey = (import.meta.env as any).VITE_API_KEY || '';
   if (!apiKey) {
-    console.warn('VITE_API_KEY is not set. /send-quote requests will be rejected with 401.');
+    console.warn('VITE_API_KEY n\'est pas défini. Les requêtes /send-quote seront rejetées avec 401.');
   }
 
-  // Backend URL: prefer an explicit VITE_BACKEND_URL (for local testing or external API),
-  // otherwise use a relative path so the deployed frontend talks to the same origin
-  // (Vercel routes /send-quote to the serverless function in `vercel.json`).
+  // URL Backend : préférer un VITE_BACKEND_URL explicite, sinon utiliser un chemin relatif
   const backendBase = ((import.meta.env as any).VITE_BACKEND_URL || '').trim();
   const sendQuoteUrl = backendBase
     ? `${backendBase.replace(/\/$/, '')}/send-quote`
     : '/send-quote';
 
+  console.log('Configuration:', {
+    apiKey: apiKey ? 'Configuré' : 'Non configuré',
+    backendUrl: sendQuoteUrl,
+    environment: import.meta.env.MODE
+  });
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!state || !state.userId) {
-      navigate('/login');
-      return;
-    }
-    const quoteRequest: QuoteRequest = {
-      ...formData,
-      products,
-      message: formData.message || `Bonjour, je souhaite recevoir un devis pour les produits sélectionnés. Merci de me contacter avec vos meilleures conditions.`
-    };
-  // Send JSON to backend (no PDF)
-  try {
-    const resp = await fetch(sendQuoteUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey
-      },
-      body: JSON.stringify(quoteRequest)
-    });
+    
+    if (isSubmitting) return;
+    
+    setError(null);
+    setIsSubmitting(true);
 
-    // Log response for troubleshooting
-    console.debug('send-quote response status:', resp.status);
+    try {
+      // Vérification de l'authentification utilisateur
+      if (!state || !state.userId) {
+        navigate('/login');
+        return;
+      }
 
-    if (!resp.ok) {
-      // try to parse JSON error message
-      let errBody = null;
-      try { errBody = await resp.json(); } catch (e) { /* ignore */ }
-      const errMsg = (errBody && (errBody.error || errBody.message)) || resp.statusText || `HTTP ${resp.status}`;
-      throw new Error(errMsg);
-    }
+      // Validation côté client
+      if (!formData.name.trim() || !formData.email.trim() || !formData.phone.trim()) {
+        setError('Veuillez remplir tous les champs obligatoires.');
+        return;
+      }
 
-    // Success: update app state and navigate
-    dispatch({ type: 'SUBMIT_QUOTE', payload: quoteRequest });
-    // If the quote covers the whole cart (no single selectedProduct), clear the cart after 2s
-    if (!state.selectedProduct) {
-      setTimeout(() => {
-        dispatch({ type: 'EXPLICIT_CLEAR_CART' });
-      }, 2000);
+      if (products.length === 0) {
+        setError('Aucun produit sélectionné pour le devis.');
+        return;
+      }
+
+      // Vérification de la clé API
+      if (!apiKey) {
+        setError('Configuration manquante. Veuillez contacter l\'administrateur.');
+        return;
+      }
+
+      const quoteRequest: QuoteRequest = {
+        ...formData,
+        products,
+        message: formData.message || `Bonjour, je souhaite recevoir un devis pour les produits sélectionnés. Merci de me contacter avec vos meilleures conditions.`
+      };
+
+      console.log('Envoi de la demande de devis à:', sendQuoteUrl);
+      console.log('Données:', JSON.stringify(quoteRequest, null, 2));
+
+      // Envoi de la requête
+      const resp = await fetch(sendQuoteUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey
+        },
+        body: JSON.stringify(quoteRequest)
+      });
+
+      console.log('Statut de la réponse send-quote:', resp.status);
+
+      if (!resp.ok) {
+        // Tentative de parser le message d'erreur JSON
+        let errBody = null;
+        try { 
+          errBody = await resp.json(); 
+        } catch (e) { 
+          console.warn('Impossible de parser la réponse d\'erreur JSON:', e);
+        }
+        
+        const errMsg = (errBody && (errBody.error || errBody.message)) || resp.statusText || `HTTP ${resp.status}`;
+        
+        // Messages d'erreur spécifiques
+        if (resp.status === 401) {
+          throw new Error('Erreur d\'authentification. Veuillez vérifier la configuration.');
+        } else if (resp.status === 500) {
+          throw new Error('Erreur serveur. Veuillez réessayer plus tard.');
+        } else if (resp.status === 400) {
+          throw new Error('Données invalides. Veuillez vérifier vos informations.');
+        }
+        
+        throw new Error(errMsg);
+      }
+
+      // Parse de la réponse de succès
+      const responseData = await resp.json();
+      console.log('Réponse de succès:', responseData);
+
+      // Succès: mise à jour de l'état de l'app et navigation
+      dispatch({ type: 'SUBMIT_QUOTE', payload: quoteRequest });
+      
+      // Si le devis couvre tout le panier (pas de selectedProduct unique), vider le panier après 2s
+      if (!state.selectedProduct) {
+        setTimeout(() => {
+          dispatch({ type: 'EXPLICIT_CLEAR_CART' });
+        }, 2000);
+      }
+      
+      // Fermer la modal immédiatement
+      dispatch({ type: 'CLOSE_QUOTE_MODAL' });
+      
+      // Naviguer vers la page de succès
+      navigate('/quote-success');
+      
+    } catch (err: any) {
+      console.error('Échec de l\'envoi du devis:', err);
+      
+      let errorMessage = 'Une erreur est survenue lors de l\'envoi de votre demande.';
+      
+      if (err.name === 'TypeError' && err.message.includes('fetch')) {
+        errorMessage = 'Erreur de connexion. Vérifiez votre connexion internet.';
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      
+      setError(errorMessage);
+    } finally {
+      setIsSubmitting(false);
     }
-    // Close modal immediately
-    dispatch({ type: 'CLOSE_QUOTE_MODAL' });
-    // Navigate to success page
-    navigate('/quote-success');
-  } catch (err: any) {
-    console.error('Failed to send quote:', err);
-    alert(`Erreur lors de l'envoi de la demande: ${err && err.message ? err.message : 'erreur inconnue'}`);
-    setShowTemplate(false);
-  }
   };
 
   const totalPrice = products.reduce((sum: number, item: any) => sum + item.totalPrice, 0);
@@ -107,15 +170,31 @@ export default function QuoteModal() {
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-bold text-gray-800">Demander un devis</h2>
             <button
-              onClick={() => { setShowTemplate(false); dispatch({ type: 'CLOSE_QUOTE_MODAL' }); }}
-              className="text-gray-400 hover:text-gray-600"
+              onClick={() => { 
+                setShowTemplate(false); 
+                setError(null);
+                dispatch({ type: 'CLOSE_QUOTE_MODAL' }); 
+              }}
+              className="text-gray-400 hover:text-gray-600 transition-colors"
+              disabled={isSubmitting}
             >
               <X className="w-6 h-6" />
             </button>
           </div>
+
+          {error && (
+            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start space-x-3">
+              <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+              <div className="text-red-700">
+                <p className="font-medium">Erreur</p>
+                <p className="text-sm">{error}</p>
+              </div>
+            </div>
+          )}
+          
           {showTemplate ? (
             <div className="bg-gradient-to-br from-green-50 to-blue-50 p-6 rounded-lg shadow-lg border border-green-200">
-              {/* Success Header */}
+              {/* Contenu du template de succès - identique au code original */}
               <div className="flex items-center mb-4">
                 <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center mr-4">
                   <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -128,7 +207,7 @@ export default function QuoteModal() {
                 </div>
               </div>
 
-              {/* Summary Card */}
+              {/* Carte de résumé */}
               <div className="bg-white p-5 rounded-lg shadow-sm border border-gray-200 mb-4">
                 <h4 className="font-semibold text-gray-800 mb-3 flex items-center">
                   <svg className="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -176,7 +255,7 @@ export default function QuoteModal() {
                 )}
               </div>
 
-              {/* Next Steps */}
+              {/* Prochaines étapes */}
               <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
                 <h4 className="font-semibold text-blue-800 mb-2 flex items-center">
                   <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -192,7 +271,7 @@ export default function QuoteModal() {
                 </ul>
               </div>
 
-              {/* Auto-reload message */}
+              {/* Message de rechargement automatique */}
               <div className="mt-4 text-center">
                 <p className="text-sm text-gray-600 mb-3">
                   ⏱️ La page se rechargera automatiquement dans 3 secondes...
@@ -201,7 +280,6 @@ export default function QuoteModal() {
                   onClick={() => {
                     setShowTemplate(false);
                     dispatch({ type: 'TOGGLE_QUOTE_MODAL', payload: null });
-                    // Reload the page to return to main page
                     window.location.reload();
                   }}
                   className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors font-medium"
@@ -212,7 +290,7 @@ export default function QuoteModal() {
             </div>
           ) : (
             <form onSubmit={handleSubmit}>
-              {/* Products summary */}
+              {/* Résumé des produits */}
               <div className="mb-6 bg-gray-50 p-4 rounded-lg">
                 <h3 className="font-semibold mb-3">Produits concernés:</h3>
                 <div className="space-y-2">
@@ -230,7 +308,8 @@ export default function QuoteModal() {
                   </div>
                 </div>
               </div>
-              {/* Contact form */}
+              
+              {/* Formulaire de contact */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -242,6 +321,7 @@ export default function QuoteModal() {
                     value={formData.name}
                     onChange={(e) => setFormData((prev: typeof formData) => ({ ...prev, name: e.target.value }))}
                     className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    disabled={isSubmitting}
                   />
                 </div>
                 <div>
@@ -254,6 +334,7 @@ export default function QuoteModal() {
                     value={formData.email}
                     onChange={(e) => setFormData((prev: typeof formData) => ({ ...prev, email: e.target.value }))}
                     className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    disabled={isSubmitting}
                   />
                 </div>
                 <div>
@@ -266,6 +347,7 @@ export default function QuoteModal() {
                     value={formData.phone}
                     onChange={(e) => setFormData((prev: typeof formData) => ({ ...prev, phone: e.target.value }))}
                     className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    disabled={isSubmitting}
                   />
                 </div>
                 <div>
@@ -277,9 +359,11 @@ export default function QuoteModal() {
                     value={formData.company}
                     onChange={(e) => setFormData((prev: typeof formData) => ({ ...prev, company: e.target.value }))}
                     className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    disabled={isSubmitting}
                   />
                 </div>
               </div>
+              
               <div className="mb-6">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Message (optionnel)
@@ -290,19 +374,36 @@ export default function QuoteModal() {
                   onChange={(e) => setFormData((prev: typeof formData) => ({ ...prev, message: e.target.value }))}
                   placeholder="Précisez vos besoins, quantités souhaitées, délais, ou toute autre information utile..."
                   className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  disabled={isSubmitting}
                 />
               </div>
+              
               <div className="bg-blue-50 p-4 rounded-lg mb-6">
                 <p className="text-sm text-blue-800">
                   <strong>Note:</strong> Nos experts vous contacteront dans les 24h avec un devis personnalisé incluant les prix, disponibilités et conditions de livraison.
                 </p>
               </div>
+              
               <button
                 type="submit"
-                className="w-full bg-blue-600 text-white py-3 px-6 rounded-md hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2"
+                disabled={isSubmitting}
+                className={`w-full py-3 px-6 rounded-md transition-colors flex items-center justify-center space-x-2 ${
+                  isSubmitting 
+                    ? 'bg-gray-400 cursor-not-allowed' 
+                    : 'bg-blue-600 hover:bg-blue-700'
+                } text-white`}
               >
-                <Send className="w-5 h-5" />
-                <span>Envoyer la demande</span>
+                {isSubmitting ? (
+                  <>
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                    <span>Envoi en cours...</span>
+                  </>
+                ) : (
+                  <>
+                    <Send className="w-5 h-5" />
+                    <span>Envoyer la demande</span>
+                  </>
+                )}
               </button>
             </form>
           )}

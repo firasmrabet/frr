@@ -13,9 +13,9 @@ services:
       - key: PLAYWRIGHT_BROWSERS_PATH
         value: /ms-playwright
       - key: PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH
-  value: /usr/bin/chromium
+        value: /usr/bin/chromium
       - key: CHROME_BIN
-  value: /usr/bin/chromium
+        value: /usr/bin/chromium
       - key: PUPPETEER_SKIP_CHROMIUM_DOWNLOAD
         value: "true"
       - key: PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD
@@ -24,11 +24,31 @@ services:
         value: /app/generated-pdfs
       - key: PDF_TEMPLATE_PATH
         value: /app/templates/devis-pdf.ejs
-    disk:
-      name: pdf-storage
-      mountPath: /app/generated-pdfs
-      sizeGB: 1
-      
+        
+      # Variables SMTP (À CONFIGURER)
+      - key: SMTP_HOST
+        value: smtp.gmail.com
+      - key: SMTP_PORT
+        value: "587"
+      - key: SMTP_USER
+        value: votre-email@gmail.com  # REMPLACEZ PAR VOTRE EMAIL
+      - key: SMTP_PASS
+        value: votre-mot-de-passe-app  # REMPLACEZ PAR VOTRE MOT DE PASSE APP
+      - key: RECEIVER_EMAIL
+        value: marwenyoussef2017@gmail.com  # EMAIL(S) ADMIN SÉPARÉS PAR VIRGULES
+        
+      # Sécurité (À CONFIGURER)
+      - key: API_KEY
+        value: votre-cle-api-secrete  # REMPLACEZ PAR UNE CLÉ SÉCURISÉE
+      - key: DOWNLOAD_TOKEN_SECRET
+        value: votre-secret-token-32-caracteres-minimum  # REMPLACEZ
+      - key: ENCRYPTION_KEY
+        value: votre-cle-chiffrement-32-caracteres-min  # REMPLACEZ
+        
+      # Frontend Origin
+      - key: FRONTEND_ORIGIN
+        value: https://bedouistoreproducts.vercel.app
+        
       # Company Information
       - key: COMPANY_NAME
         value: "Bedouielec"
@@ -37,7 +57,7 @@ services:
       - key: COMPANY_APE
         value: "4321A"
       - key: COMPANY_TVA
-        value: "0.20"
+        value: "FR12345678900"
       - key: COMPANY_ADDRESS
         value: "Rue Example, 1234 Ville"
       - key: COMPANY_PHONE
@@ -48,3 +68,10 @@ services:
         value: "https://bedouistoreproducts.vercel.app"
       - key: COMPANY_LOGO_URL
         value: "https://bedouistoreproducts.vercel.app/logo.png"
+      - key: TVA_RATE
+        value: "0.20"
+        
+    disk:
+      name: pdf-storage
+      mountPath: /app/generated-pdfs
+      sizeGB: 1
