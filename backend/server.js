@@ -8,12 +8,54 @@ import ejs from 'ejs';
 import { promisify } from 'util';
 import { exec } from 'child_process';
 import { promises as fs } from 'fs';
+
+// Try to find a chromium/chrome executable to use with Playwright.
+// Order of preference:
+// 1) PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH env var
+// 2) CHROME_BIN env var
+// 3) Common system paths (chromium, chromium-browser, google-chrome)
+// 4) Playwright bundled executable (chromium.executablePath())
 import path from 'path';
 import crypto from 'crypto';
 
 // Configure Playwright for production environment
 const isProd = process.env.NODE_ENV === 'production';
-const playwrightConfig = {
+// We'll determine the executable path at runtime because different hosts
+// may expose Chromium under different paths. Keep the config mutable so
+// we can set executablePath just before launching.
+
+async function findChromiumExecutable() {
+    const candidates = [];
+    if (process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH) candidates.push(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH);
+    if (process.env.CHROME_BIN) candidates.push(process.env.CHROME_BIN);
+    // common linux locations (Render and many distros)
+    candidates.push('/usr/bin/chromium');
+    candidates.push('/usr/bin/chromium-browser');
+    candidates.push('/usr/bin/google-chrome');
+    candidates.push('/usr/bin/google-chrome-stable');
+
+    for (const c of candidates) {
+        if (!c) continue;
+        try {
+            // check if file exists and is executable
+            await fs.access(c);
+            return c;
+        } catch (e) {
+            // not present, continue
+        }
+    }
+
+    // As a last resort, try Playwright's executablePath()
+    try {
+        const pwPath = await chromium.executablePath();
+        if (pwPath) return pwPath;
+    } catch (e) {
+        // ignore
+    }
+
+    return undefined;
+}
+let playwrightConfig = {
     args: [
         '--no-sandbox',
         '--disable-setuid-sandbox',
@@ -26,7 +68,8 @@ const playwrightConfig = {
         '--disable-renderer-backgrounding'
     ],
     headless: true,
-    executablePath: process.env.CHROME_BIN || undefined,
+    // leave executablePath undefined for now; we'll detect a suitable binary
+    executablePath: undefined,
     chromiumSandbox: false
 };
 
@@ -440,6 +483,25 @@ app.post('/send-quote', async (req, res) => {
     let pdfBuffer;
     try {
         console.log('Launching browser...');
+        // Detect a usable Chromium/Chrome binary and set executablePath if available.
+        try {
+            const detected = await findChromiumExecutable();
+            if (detected) {
+                playwrightConfig.executablePath = detected;
+            }
+            console.log('Playwright executable path (detected):', playwrightConfig.executablePath);
+        } catch (e) {
+            console.warn('Could not autodetect playwright executable:', e && e.message);
+        }
+
+        // Final diagnostic: log Playwright's reported executablePath too (may be bundled)
+        try {
+            const pwReported = await chromium.executablePath();
+            console.log('Playwright reported executablePath():', pwReported);
+        } catch (e) {
+            // ignore - may throw in some environments
+        }
+
         const browser = await chromium.launch(playwrightConfig);
         console.log('Browser launched successfully');
         
