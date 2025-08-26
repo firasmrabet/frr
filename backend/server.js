@@ -897,6 +897,50 @@ app.get('/health', async (req, res) => {
     }
 });
 
+// Temporary debug endpoint: reports Playwright / Chromium executable diagnostics.
+// Remove this in production once debugging is complete.
+app.get('/debug/playwright', async (req, res) => {
+    try {
+
+        const candidates = [
+            process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH,
+            process.env.CHROME_BIN,
+            '/usr/bin/chromium',
+            '/usr/bin/chromium-browser',
+            '/usr/bin/google-chrome',
+            '/usr/bin/google-chrome-stable'
+        ].filter(Boolean);
+        const checks = {};
+        for (const c of candidates) {
+            try {
+                await fs.access(c);
+                checks[c] = true;
+            } catch (e) {
+                checks[c] = false;
+            }
+        }
+        let pwPath = null;
+        try {
+            pwPath = await chromium.executablePath();
+        } catch (e) {
+            pwPath = null;
+        }
+        return res.json({
+            env: {
+                PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH || null,
+                CHROME_BIN: process.env.CHROME_BIN || null
+            },
+            candidates,
+            checks,
+            playwrightReportedExecutablePath: pwPath
+        });
+    } catch (e) {
+        return res.status(500).json({ error: e.message });
+    }
+});
++
++
+
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Server running on port ${PORT}`);
     console.log(`📡 Server accessible at:`);
