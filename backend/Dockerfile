@@ -1,43 +1,59 @@
-# Use the official Node.js 18 image as a parent image
-FROM node:20-slim
+# Use Node.js 20 as the base image
+FROM node:20-bullseye-slim
 
-# Install Playwright dependencies
-RUN apt-get update && \
-    apt-get install -y \
-    libnss3 \
-    libnspr4 \
-    libatk1.0-0 \
+# Set environment variables
+ENV NODE_ENV=production
+ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
+ENV CHROME_BIN=/usr/bin/chromium
+
+# Install system dependencies including Chromium
+RUN apt-get update && apt-get install -y \
+    chromium \
+    fonts-freefont-ttf \
+    fonts-ipafont-gothic \
+    fonts-kacst \
+    fonts-thai-tlwg \
+    fonts-wqy-zenhei \
+    libasound2 \
     libatk-bridge2.0-0 \
+    libatk1.0-0 \
     libcups2 \
     libdrm2 \
-    libxkbcommon0 \
+    libgbm1 \
+    libnss3 \
+    libnspr4 \
     libxcomposite1 \
     libxdamage1 \
     libxfixes3 \
+    libxkbcommon0 \
     libxrandr2 \
-    libgbm1 \
-    libasound2 \
-    fonts-ipafont-gothic fonts-wqy-zenhei fonts-thai-tlwg fonts-kacst fonts-freefont-ttf \
-    --no-install-recommends && \
-    rm -rf /var/lib/apt/lists/*
+    xvfb \
+    --no-install-recommends \
+    && rm -rf /var/lib/apt/lists/*
 
-# Install Playwright browsers
-RUN npx playwright install chromium --with-deps
-
-# Create and set the working directory
+# Create app directory
 WORKDIR /app
 
-# Copy package.json and package-lock.json
+# Install app dependencies
 COPY package*.json ./
+RUN npm ci --only=production --prefer-offline --no-audit --progress=false
 
-# Install dependencies
-RUN npm install
-
-# Copy the rest of the application
+# Copy app source
 COPY . .
 
-# Expose the port the app runs on
+# Create directory for PDF storage
+RUN mkdir -p generated-pdfs && chown -R node:node /app
+
+# Switch to non-root user
+USER node
+
+# Expose the application port
 EXPOSE 5000
 
-# Command to run the application
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD node -e "require('http').get('http://localhost:5000/health', (r) => r.statusCode === 200 ? process.exit(0) : process.exit(1))"
+
+# Start the application
 CMD ["node", "server.js"]

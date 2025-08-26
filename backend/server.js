@@ -11,7 +11,7 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import crypto from 'crypto';
 
-// Configure Playwright for Render.com environment
+// Configure Playwright for production environment
 const isProd = process.env.NODE_ENV === 'production';
 const playwrightConfig = {
     args: [
@@ -19,10 +19,14 @@ const playwrightConfig = {
         '--disable-setuid-sandbox',
         '--disable-dev-shm-usage',
         '--disable-accelerated-2d-canvas',
-        '--disable-gpu'
+        '--disable-gpu',
+        '--disable-software-rasterizer',
+        '--disable-background-timer-throttling',
+        '--disable-backgrounding-occluded-windows',
+        '--disable-renderer-backgrounding'
     ],
     headless: true,
-    executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH || undefined,
+    executablePath: process.env.CHROME_BIN || undefined,
     chromiumSandbox: false
 };
 
@@ -744,8 +748,18 @@ app.get('/download-devis/:name', async (req, res) => {
 });
 
 // Health check endpoint (resilient)
-// Try to query chromium version for diagnostics but never fail the health check if chromium is missing.
+let cachedHealthCheck = null;
+let lastHealthCheck = 0;
+const HEALTH_CHECK_TTL = 60000; // Cache health check for 1 minute
+
 app.get('/health', async (req, res) => {
+    const now = Date.now();
+    
+    // Return cached result if available and fresh
+    if (cachedHealthCheck && (now - lastHealthCheck < HEALTH_CHECK_TTL)) {
+        return res.json(cachedHealthCheck);
+    }
+
     try {
         const execAsync = promisify(exec);
         let chromeVersion = null;
@@ -753,25 +767,56 @@ app.get('/health', async (req, res) => {
             const { stdout } = await execAsync('chromium --version');
             chromeVersion = stdout.trim();
         } catch (e) {
-            // Try common alternative binary name
             try {
                 const { stdout } = await execAsync('chromium-browser --version');
                 chromeVersion = stdout.trim();
             } catch (e2) {
-                // Not available in PATH or not installed; leave chromeVersion as null
                 chromeVersion = null;
             }
         }
-        // Always return 200 so platform health checks won't fail the service just because chromium is absent.
-        return res.json({
+
+        // Check if PDF directory exists and is writable
+        let pdfDirStatus = 'ok';
+        try {
+            await fs.access('./generated-pdfs', fs.constants.W_OK);
+        } catch (e) {
+            pdfDirStatus = 'error';
+        }
+
+        const healthStatus = {
             status: 'healthy',
             chrome: chromeVersion,
             node: process.version,
-            env: process.env.NODE_ENV
-        });
+            env: process.env.NODE_ENV,
+            memory: {
+                heapUsed: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
+                heapTotal: Math.round(process.memoryUsage().heapTotal / 1024 / 1024),
+                rss: Math.round(process.memoryUsage().rss / 1024 / 1024)
+            },
+            uptime: process.uptime(),
+            pdfDirectory: pdfDirStatus
+        };
+
+        // Cache the result
+        cachedHealthCheck = healthStatus;
+        lastHealthCheck = now;
+
+        return res.json(healthStatus);
     } catch (error) {
-        // If something unexpected happens, still return success with a note so Render doesn't treat the service as unhealthy.
-        return res.json({ status: 'healthy', chrome: null, node: process.version, env: process.env.NODE_ENV, note: 'chrome check failed' });
+        const fallbackStatus = {
+            status: 'healthy',
+            chrome: null,
+            node: process.version,
+            env: process.env.NODE_ENV,
+            note: 'health check partially failed',
+            error: isProd ? 'internal error' : error.message
+        };
+
+        // Cache the fallback result
+        cachedHealthCheck = fallbackStatus;
+        lastHealthCheck = now;
+
+        return res.json(fallbackStatus);
     }
 });
 
