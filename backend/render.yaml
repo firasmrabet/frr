@@ -14,10 +14,6 @@ services:
         value: /app/generated-pdfs
       - key: PDF_TEMPLATE_PATH
         value: /app/templates/devis-pdf.ejs
-      - key: PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH
-        value: /usr/bin/chromium
-      - key: CHROME_BIN
-        value: /usr/bin/chromium
         
       # Variables SMTP (À CONFIGURER)
       - key: SMTP_HOST
