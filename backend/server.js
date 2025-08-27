@@ -1,4 +1,5 @@
-import { chromium } from 'playwright';
+import playwright from 'playwright-core';
+import chromium from '@sparticuz/chromium';
 import express from 'express';
 import cors from 'cors';
 import nodemailer from 'nodemailer';
@@ -13,86 +14,13 @@ import crypto from 'crypto';
 
 dotenv.config();
 
-// Fonction utilitaire pour vérifier l'existence d'un exécutable
-async function execExists(cmd) {
-    const execAsync = promisify(exec);
-    try {
-        await execAsync(`which ${cmd}`);
-        return true;
-    } catch (e) {
-        try {
-            // Essayer avec --version
-            await execAsync(`${cmd} --version`);
-            return true;
-        } catch (e2) {
-            return false;
-        }
-    }
-}
-
 // Configuration Playwright
 const isProd = process.env.NODE_ENV === 'production';
 
-async function findChromiumExecutable() {
-    const candidates = [];
-    if (process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH) candidates.push(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH);
-    if (process.env.CHROME_BIN) candidates.push(process.env.CHROME_BIN);
-    // Emplacements courants sur Linux (Render et autres distros)
-    candidates.push('/usr/bin/chromium');
-    candidates.push('/usr/bin/chromium-browser');
-    candidates.push('/usr/bin/google-chrome');
-    candidates.push('/usr/bin/google-chrome-stable');
-    
-    console.log('Candidats Chromium détectés ->', candidates.filter(Boolean));
-    
-    for (const c of candidates) {
-        if (!c) continue;
-        try {
-            const ok = await execExists(c);
-            if (ok) {
-                console.log('Candidat Chromium OK ->', c);
-                // S'assurer que les variables d'environnement reflètent le chemin détecté
-                process.env.CHROME_BIN = c;
-                process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH = c;
-                return c;
-            }
-        } catch (e) {
-            // Continuer au candidat suivant
-        }
-    }
-
-    // En dernier recours, essayer executablePath() de Playwright
-    try {
-        const pwPath = await chromium.executablePath();
-        if (pwPath) {
-            console.log('Utilisation du executablePath reporté par Playwright ->', pwPath);
-            process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH = pwPath;
-            process.env.CHROME_BIN = pwPath;
-            return pwPath;
-        }
-    } catch (e) {
-        // ignorer
-    }
-
-    console.warn('Aucun exécutable chromium détecté depuis les candidats ou le bundle Playwright');
-    return undefined;
-}
-
-let playwrightConfig = {
-    args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-accelerated-2d-canvas',
-        '--disable-gpu',
-        '--disable-software-rasterizer',
-        '--disable-background-timer-throttling',
-        '--disable-backgrounding-occluded-windows',
-        '--disable-renderer-backgrounding'
-    ],
-    headless: true,
-    executablePath: undefined,
-    chromiumSandbox: false
+const playwrightConfig = {
+    args: chromium.args,
+    executablePath: await chromium.executablePath(),
+    headless: chromium.headless
 };
 
 // Configuration des tokens de téléchargement
@@ -641,7 +569,7 @@ app.post('/send-quote', async (req, res) => {
                 console.warn('Impossible de détecter automatiquement l\'exécutable playwright:', e && e.message);
             }
 
-            const browser = await chromium.launch(playwrightConfig);
+            const browser = await playwright.chromium.launch(playwrightConfig);
             console.log('Navigateur lancé avec succès');
             
             const context = await browser.newContext();

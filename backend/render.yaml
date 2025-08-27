@@ -10,20 +10,14 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
-      - key: PLAYWRIGHT_BROWSERS_PATH
-        value: /ms-playwright
-      - key: PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH
-        value: /usr/bin/chromium
-      - key: CHROME_BIN
-        value: /usr/bin/chromium
-      - key: PUPPETEER_SKIP_CHROMIUM_DOWNLOAD
-        value: "true"
-      - key: PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD
-        value: "1"
       - key: PDF_STORAGE_PATH
         value: /app/generated-pdfs
       - key: PDF_TEMPLATE_PATH
         value: /app/templates/devis-pdf.ejs
+      - key: PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH
+        value: /usr/bin/chromium
+      - key: CHROME_BIN
+        value: /usr/bin/chromium
         
       # Variables SMTP (À CONFIGURER)
       - key: SMTP_HOST
@@ -47,7 +41,7 @@ services:
         
       # Frontend Origin
       - key: FRONTEND_ORIGIN
-        value: https://bedouistoreproducts.vercel.app
+        value: https://bedoui-frontend-k7h9.onrender.com
         
       # Company Information
       - key: COMPANY_NAME

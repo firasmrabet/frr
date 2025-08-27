@@ -11,17 +11,17 @@
   "dev": "node server.js",
   "server": "node server.js",
   "test:verify-update": "node test/verify-update-product.mjs",
-  "build": "echo 'No build step required'",
-  "postinstall": "npx playwright install --with-deps"
+  "build": "echo 'No build step required'"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.39.3",
+    "@sparticuz/chromium": "^119.0.0",
     "cors": "^2.8.5",
     "dotenv": "^16.6.1",
     "ejs": "^3.1.10",
     "express": "^4.21.2",
     "nodemailer": "^7.0.5",
-    "playwright": "^1.38.0"
+    "playwright-core": "^1.43.0"
   },
   "devDependencies": {
     "node-fetch": "^3.3.2"
