@@ -15,25 +15,25 @@ services:
       - key: PDF_TEMPLATE_PATH
         value: /app/templates/devis-pdf.ejs
         
-      # Variables SMTP (À CONFIGURER)
+      # Variables SMTP
       - key: SMTP_HOST
         value: smtp.gmail.com
       - key: SMTP_PORT
         value: "587"
       - key: SMTP_USER
-        value: votre-email@gmail.com  # REMPLACEZ PAR VOTRE EMAIL
+        value: firassmrabett111@gmail.com
       - key: SMTP_PASS
-        value: votre-mot-de-passe-app  # REMPLACEZ PAR VOTRE MOT DE PASSE APP
+        sync: false  # Cette valeur sera configurée manuellement dans l'interface Render
       - key: RECEIVER_EMAIL
-        value: marwenyoussef2017@gmail.com  # EMAIL(S) ADMIN SÉPARÉS PAR VIRGULES
+        value: marwenyoussef2017@gmail.com,firassmrabett111@gmail.com  # Emails séparés par des virgules
         
-      # Sécurité (À CONFIGURER)
+      # Variables de sécurité
       - key: API_KEY
-        value: votre-cle-api-secrete  # REMPLACEZ PAR UNE CLÉ SÉCURISÉE
+        value: fede4f36462899e544b0b541a1e7961f5070079d4ffbe9ea8a08d2d7ba2cc403
       - key: DOWNLOAD_TOKEN_SECRET
-        value: votre-secret-token-32-caracteres-minimum  # REMPLACEZ
+        value: f66ed78a6d0026aa81f35d7f440eb25484f7f0c559ccd95eede3d594595fb419
       - key: ENCRYPTION_KEY
-        value: votre-cle-chiffrement-32-caracteres-min  # REMPLACEZ
+        value: 9d0202c35d5b66311b5668fdc4ea898e10472cfb036895935dfe641ff8758279
         
       # Frontend Origin
       - key: FRONTEND_ORIGIN
