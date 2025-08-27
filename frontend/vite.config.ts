@@ -14,7 +14,9 @@ export default defineConfig({
         }
       }
     },
-    sourcemap: true
+    sourcemap: true,
+    outDir: 'dist',
+    assetsDir: 'assets'
   },
   server: {
     port: 5173,
