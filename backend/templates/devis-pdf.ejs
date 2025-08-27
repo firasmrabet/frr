@@ -189,29 +189,7 @@
       <div class="company-info">
         <div class="company-name"><%= companyName || 'Bedouielec Transformateurs' %></div>
         <div class="details">
-          <% if (companyAddress) { %>
-            <div class="detail-row"><%= companyAddress %></div>
-          <% } %>
-          <% if (companyPhone) { %>
-            <div class="detail-row">Tél: <%= companyPhone %></div>
-          <% } %>
-          <% if (companyEmail) { %>
-            <div class="detail-row">Email: <%= companyEmail %></div>
-          <% } %>
-          <% if (companySite) { %>
-            <div class="detail-row">Site web: <%= companySite %></div>
-          <% } %>
-          <div class="legal-details">
-            <% if (companySiret) { %>
-              <div>SIRET: <%= companySiret %></div>
-            <% } %>
-            <% if (companyApe) { %>
-              <div>Code APE: <%= companyApe %></div>
-            <% } %>
-            <% if (companyTva) { %>
-              <div>N° TVA: <%= companyTva %></div>
-            <% } %>
-          </div>
+          <!-- Company contact and legal details intentionally omitted from PDFs -->
         </div>
       </div>
     </div>
@@ -226,9 +204,9 @@
     <div class="bill-to">
       <div class="section-title">FACTURÉ À</div>
       <div><strong>Adresse du client :</strong></div>
-      <div><%= (typeof company === 'undefined' || !company ? name : company) %></div>
-      <div>Téléphone : <%= phone %></div>
-      <div>Email : <%= email %></div>
+  <div>Nom le client : <%= (typeof company === 'undefined' || !company ? name : company) %></div>
+  <div>Téléphone : <%= phone %></div>
+  <div>Email : <%= email %></div>
     </div>
 
     <div class="devis-info">
