@@ -35,6 +35,10 @@
       text-align: center;
       border-bottom: 2px solid #0b4a8b;
       padding-bottom: 10px;
+      /* Prevent mobile/email clients from inserting breaks between letters */
+      white-space: nowrap;
+      word-break: normal;
+      overflow-wrap: normal;
     }
     
     .company-info { 
@@ -84,10 +88,13 @@
     .section-title { color: #0b4a8b; font-weight: 700; margin-bottom: 8px; }
 
     table.items { width: 100%; border-collapse: collapse; margin-top: 18px; }
-    table.items thead th { border-bottom: 2px solid #cfcfcf; padding: 10px 8px; text-align: left; color: #0b4a8b; font-weight: 700; }
-    table.items tbody td { padding: 10px 8px; border-bottom: 1px solid #eee; vertical-align: top; }
-    .qty { width: 80px; text-align: left; }
-    .desc { word-break: break-word; }
+  table.items thead th { border-bottom: 2px solid #cfcfcf; padding: 10px 8px; text-align: left; color: #0b4a8b; font-weight: 700; }
+  table.items tbody td { padding: 10px 8px; border-bottom: 1px solid #eee; vertical-align: top; }
+  .qty { width: 80px; text-align: left; }
+  /* Prevent header labels (like DÉSIGNATION) from being broken into single letters on small/mobile clients */
+  table.items thead th.desc { white-space: nowrap; word-break: normal; overflow-wrap: normal; }
+  /* Allow product names in tbody to wrap naturally when long */
+  table.items tbody td.desc { word-break: break-word; overflow-wrap: anywhere; white-space: normal; }
     .unit { width: 120px; text-align: right; }
     .amount { width: 140px; text-align: right; }
 
@@ -204,9 +211,10 @@
     <div class="bill-to">
       <div class="section-title">FACTURÉ À</div>
       <div><strong>Adresse du client :</strong></div>
-  <div>Nom le client : <%= (typeof company === 'undefined' || !company ? name : company) %></div>
-  <div>Téléphone : <%= phone %></div>
-  <div>Email : <%= email %></div>
+  <div><%= (typeof company === 'undefined' || !company ? name : company) %></div>
+  <div>Nom  : <%= name %></div>
+      <div>Téléphone : <%= phone %></div>
+      <div>Email : <%= email %></div>
     </div>
 
     <div class="devis-info">
@@ -239,7 +247,7 @@
   <% 
     // compute totals: assume totalPrice is HT
     const totalHT = Number(totalPrice || 0);
-    const tvRate = (typeof tvaRate !== 'undefined' && tvaRate !== null) ? Number(tvaRate) : 0.20; // default 20%
+    const tvRate = (typeof tvaRate !== 'undefined' && tvaRate !== null) ? Number(tvaRate) : 0.19; // default 19%
     const tvaAmount = Math.round((totalHT * tvRate) * 100) / 100;
     const totalTTC = Math.round((totalHT + tvaAmount) * 100) / 100;
   %>
